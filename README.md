@@ -44,15 +44,8 @@ Data cleaning is now complete!
 
 ## Part 3: Ridge Regression
 
-
 Ridge Regression is a type of linear model. Given a random sample of data with  $(\boldsymbol{X}_1,\cdots, \boldsymbol{X}_{p})$ features and a numeric response variable  $\boldsymbol{Y}$, a linear model describes the relationship between the features and the response value for each point $(i)$ as
 
-\begin{equation*}
-Y_i = \beta_0 + \beta_1X_{i1} + \cdots + \beta_p X_{ip} + \epsilon_i
-\end{equation*}
+$Y_i = \beta_0 + \beta_1X_{i1} + \cdots + \beta_p X_{ip} + \epsilon_i$
  where each $\epsilon_i$ is a random value representing the random error that is embedded in the world around us. We can use linear models to make predictions, $\hat{Y}_i$, where 
-\begin{equation*}
-\hat{Y_i} = \hat{\beta_0} + \hat{\beta_1}X_{i1} + \cdots + \hat{\beta_p} X_{ip}
-\end{equation*}
-
-Linear models make predictions by using a set of data to estimate parameters $\beta_1, \cdots, \beta_p$  along with an intercept parameter $\beta_0$. We represent estimates for  $\beta_0, \beta_1, \cdots, \beta_p$  as a vector $\boldsymbol{\hat{\beta}}= \begin{bmatrix}\hat{\beta}_0 \\ \hat{\beta}_1 \\ \vdots \\ \hat{\beta}_p\end{bmatrix}$. 
+$\hat{Y_i} = \hat{\beta_0} + \hat{\beta_1}X_{i1} + \cdots + \hat{\beta_p} X_{ip}$
