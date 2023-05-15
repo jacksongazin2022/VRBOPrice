@@ -1,5 +1,5 @@
 ---
-title: 'Stat 663 Project 2: Shrinkage and Selection'
+title: 'VRBO Price Prediction'
 author: "Jackson Gazin"
 date: "2022-10-16"
 output: pdf_document
