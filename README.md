@@ -13,15 +13,7 @@ Our client's goal is for us to build a model which can be used to predict the pr
 
 In preparation for building the model, my first step was to clean the data. One aspect of data cleaning is the process of dealing with incomplete data. Most models require our data set to be complete in the way variables are represented across different data points. Making predictions and building models are impossible when data sets have incomplete information. I first cleaned the data by checking if any of the data points were lacking values for any of the thirteen features. 
 
-\begin{table}[ht]
-\centering
-\begin{tabular}{rrr}
-  \hline
- & 0 & 138 \\ 
-  \hline
-\# Rows with NAs present at least one column (not including minstay) &   1 &   0 \\ 
-  \# Rows with NAs present in at least one colum (for transformed data) &   1 &   0 \\ 
-  \# Rows with NAs present in at least one column &   0 &   1 \\ 
-   \hline
-\end{tabular}
-\end{table}
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+$ \begin{table}[ht] \centering \begin{tabular}{rrr} \hline & 0 & 138 \\ \hline # Rows with NAs present at least one column (not including minstay) & 1 & 0 \\ # Rows with NAs present in at least one colum (for transformed data) & 1 & 0 \\ # Rows with NAs present in at least one column & 0 & 1 \\ \hline \end{tabular} \end{table} $
