@@ -44,7 +44,7 @@ Data cleaning is now complete!
 
 ## Part 3: Ridge Regression
 
-Ridge Regression is a type of linear model. Given a random sample of data with  $(\boldsymbol{X}_1,\cdots, \boldsymbol{X}_{p})$ features and a numeric response variable  $\boldsymbol{Y}$, a linear model describes the relationship between the features and the response value for each point $(i)$ as
+Ridge Regression is a type of linear model. Given a random sample of data with  $(\boldsymbol{X}\-_1,\cdots, \boldsymbol{X}_{p})$ features and a numeric response variable  $\boldsymbol{Y}$, a linear model describes the relationship between the features and the response value for each point $(i)$ as
 
 $Y_i = \beta_0 + \beta_1X_{i1} + \cdots + \beta_p X_{ip} + \epsilon_i$
  where each $\epsilon_i$ is a random value representing the random error that is embedded in the world around us. We can use linear models to make predictions, $\hat{Y}_i$, where 
