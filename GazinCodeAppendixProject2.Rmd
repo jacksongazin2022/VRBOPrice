@@ -1,0 +1,438 @@
+---
+title: 'Stat 663 Project 2: Shrinkage and Selection'
+author: "Jackson Gazin"
+date: "2022-10-16"
+output: pdf_document
+latex_engine: xelatex
+header-includes:
+  - \usepackage[labelformat=empty]{caption}
+  - \usepackage{placeins}
+keep_tex: true
+extra_dependencies: ["float", "amsmath"]
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(fig.pos = "!H", out.extra = "")
+```
+
+```{r}
+## Instal package for tables
+library(kableExtra)
+```
+
+```{r}
+## Load the data
+data <- read.csv('VRBO.csv')
+```
+
+```{r}
+## Row indexes which have NA values
+data_nas <- data[!complete.cases(data),]
+n_na_orig <- nrow(data_nas)
+
+## Confirm that NA values only occur with minstay
+data_without_min_stay <- data[, -8]
+data_nas_without_min_stay <- data_without_min_stay[!complete.cases(data_without_min_stay),]
+n_na_new <- nrow(data_nas_without_min_stay)
+```
+
+
+```{r, echo = FALSE, regfloat=FALSE}
+## Convert all the NAs in minstay column to 1
+data$minstay[is.na(data$minstay)] <- 0
+data_nas <- data[!complete.cases(data),]
+n_data_nas_new <- nrow(data_nas)
+
+## Table to display
+NumberOfNAs <- c(n_na_orig, n_na_new, n_data_nas_new)
+dataset <- c("# Rows with NAs present in at least one column", 
+             "# Rows with NAs present at least one column (not including minstay)", 
+             "# Rows with NAs present in at least one colum (for transformed data)")
+data_for_kable <- data.frame(dataset, NumberOfNAs) 
+knitr::kable(data_for_kable,
+            caption = 
+              "Figure 2.1: Rows with NA values")
+```
+
+```{r}
+## Create table for transformed data
+Description <- c("Number of Rows in Dataset", "Number of unique UnitNumber Values")
+Number <- c(nrow(data), length(unique(data$UnitNumber)))
+data_for_kable2 <- data.frame(Description, Number) 
+knitr::kable(data_for_kable2,
+            caption = 
+              "Figure 2.2: Transformed Data")
+
+## Remove UnitNumber 
+data <- data[, -1]
+
+## Take out Overall_satisfifaction, reviews
+data <- data[, c(1,4,5,6,7,8,9,10,11,12,13)]
+
+```
+
+
+
+```{r,fig.height= .5, fig.width= .5, fig.allign = 'center'}
+## Create table with variables and their classes
+variables <- c('Price', 'room_type', 'accommodates', 'bedrooms', 'minstay', 'neighborhood', 'district', 'WalkScore', 'TransitScore', 'BikeScore', 'PctRentals')
+class <- c(class(data$price), class(data$room_type), class(data$accommodates), class(data$bedrooms), class(data$minstay), class(data$neighborhood), class(data$district), class(data$WalkScore), class(data$TransitScore), class(data$BikeScore), class(data$PctRentals))
+description <- c('The price in US dollars of a one-night rental', 
+                 'Is the rental for an entire house/apt, a private room, or a shared room?', 
+                 'How many people the rental can accommodate', 'the number of bedrooms included in the rental price',
+                 'the minimum number of nights an individual must book at the property', 
+                 'the name of the neighborhood in which the rental is located.',
+                 'the name of the district in which the rental is located.', 
+                 'a score indicating how easy and safe it is to get to areas of need/interest by walking', 
+                 'a score indicating how easy and safe it is to get to areas of need/interest by public transit', 
+                 'a score indicating how easy and safe it is to get to areas of need/interest by biking', 
+                 'the percent properties in the neighborhood that are rental properties' )
+data_for_kable3 <- data.frame(variables, class, description)
+knitr::kable(data_for_kable3,
+            caption = 
+              "Figure 2.3: Variables and their classes")
+```
+
+
+
+```{r}
+## Table which shows frequency for each level in Room Type
+kable(table(data$room_type), col.names = c('Room Type', 'Frequency'), caption = 'Figure 2.4: Room Type and their Frequency')
+```
+
+```{r}
+## Collapse Levels with Inssuficient Data then make categorical
+data$room_type[which(data$room_type=="Shared room") ] <-"Private room"
+data$room_type <- as.factor(data$room_type)
+kable(table(data$room_type), col.names = c('Room Type', 'Frequency'), caption = 'Figure 2.5: Room Type and their Frequency')
+```
+
+
+```{r}
+## Table which shows frequency for each level in Neighborhood
+kable(table(data$neighborhood), col.names = c('Neighborhood', 'Frequency'), caption = 'Figure 2.6: Neighborhood Names and their Frequency')
+```
+
+
+```{r}
+## Convert ones with less than 7 percent frequency to other
+data$neighborhood[which(data$neighborhood != "Humboldt Park" & data$neighborhood != "Logan Square" & data$neighborhood != "Rogers Park" & data$neighborhood != "West Town") ] <- "Other"
+```
+
+
+
+```{r}
+## Display transformed Neighorhood Feature and make categorical
+kable(table(data$neighborhood), col.names = c('Neighborhood', 'Frequency'), caption = 'Figure 2.7: Neighborhood Names and their Frequency')
+data$neighborhood <- as.factor(data$neighborhood)
+```
+```{r}
+## Table which shows frequency for each level in District
+kable(table(data$district), col.names = c('District', 'Frequency'), caption = 'Figure 2.8: District and their Frequency')
+```
+
+
+```{r}
+## Collapse Levels
+data$district[which(data$district == "Far Southeast"  | data$district == "Far Southwest" | data$district == "Southwest") ] <- "South"
+data$district[which(data$district == "Northwest")] <- "North"
+data$district <- as.factor(data$district)
+kable(table(data$district), col.names = c('District', 'Frequency'), caption = 'Figure 2.9: District and their Frequency')
+```
+
+
+
+```{r, fig.width = .5, fig.height = .5}
+## Table with variables mapped to correct classes
+variables <- c('room_type', 'accommodates', 'bedrooms'
+               , 'minstay', 'Neighborhood', 'District','WalkScore', 'TransitScore', 'BikeScore', 'PctRentals')
+class <- c(class(data$room_type), class(data$accommodates), class(data$bedrooms), class(data$minstay), class(data$neighborhood), class(data$district),  class(data$WalkScore), class(data$TransitScore), class(data$BikeScore), class(data$PctRentals))
+description <- c('Is the rental for an entire house/apt or a shared room?', 'How many people the rental can accommodate', 'the number of bedrooms included in the rental price', 'the minimum number of nights an individual must book at the property', 'the name of the neighborhood in which the rental is located.', 'the name of the district in which the rental is located.', 'a score indicating how easy and safe it is to get to areas of need/interest by walking', 'a score indicating how easy and safe it is to get to areas of need/interest by public transit', 'a score indicating how easy and safe it is to get to areas of need/interest by biking', 'the percent properties in the neighborhood that are rental properties ' )
+data_for_kable3 <- data.frame(variables, class, description)
+knitr::kable(data_for_kable3,
+            caption = 
+              "Figure 2.10: Classes of Features for Clean Data")
+```
+
+
+
+```{r, results = 'hide', message=FALSE}
+## Install library neccesary to run ten-fold
+## for ridge regression
+library(glmnet)
+```
+
+```{r}
+## Set seed for reproducible random results
+set.seed(1)
+
+## Save model matrix 
+XD <- model.matrix(price ~ room_type + accommodates + bedrooms + minstay + neighborhood + district + 
+                     WalkScore + TransitScore + BikeScore + PctRentals, data = data)
+## RUN 10 Fold CV to get best model for ridge regression
+cv.out_ridge <- cv.glmnet(XD[,-1], data$price , alpha = 0, lambda = seq(from = 0, to = 100, by = .5), standardize = TRUE)
+
+```
+
+
+```{r}
+## Function to create plot
+ridgePlot <- function(ridge.mod, metric, title){
+  library(ggplot2)
+  
+  smallestLambda <- 
+    ridge.mod$lambda[which.min(ridge.mod$cvm)] 
+  
+  if(metric == "MSE"){
+  g1 <- ggplot( data.frame(ridge.mod$lambda), 
+                aes( x = ridge.mod$lambda, y = (ridge.mod$cvm))) + 
+    geom_point() + geom_vline( xintercept = smallestLambda, col = "blue" , lty = 2 ) + 
+    labs(caption = 
+           paste("Test MSE values for Different Tuning Parameters. 
+                 Smallest MSE at lambda = ", 
+                 smallestLambda), 
+         title = title, y = "Test MSE", x = "Tuning Parameter")
+  
+  }
+  
+  if(metric == "RMSE"){
+  g1 <- ggplot( data.frame(ridge.mod$lambda), aes( x = ridge.mod$lambda, y = sqrt(ridge.mod$cvm))) +
+    geom_point() + 
+    geom_vline( xintercept = smallestLambda, col = "blue" , lty = 2 ) +  
+    labs(caption = paste("Test RMSE values for Different Tuning Parameters.
+                         Smallest RMSE at lambda = ", smallestLambda), 
+         title = title, y = "Test RMSE", x = "Tuning Parameter")
+
+  }
+  
+  g1
+}
+```
+
+```{r, fig.height= 4, fig.width= 4, fig.allign = 'center'}
+## Examine how test RMSE changes with lambda
+ridgePlot(cv.out_ridge, metric = "RMSE", title = "Figure 3.1: Lambda vs Test RMSE (Ridge)")
+```
+
+
+
+
+```{r}
+## Create dataframe which contains results from 10-Fold
+CVResults_ridge <- data.frame("Lambda" = cv.out_ridge$lambda, "MSE" = cv.out_ridge$cvm)
+
+## Save lambda value with the smallest MSE
+smallest <- which.min(CVResults_ridge$MSE)
+
+## Save RMSE for that parameter
+RMSE_ridge <- sqrt(CVResults_ridge[smallest,"MSE"])
+
+## Create Table 
+
+lambda <- c(CVResults_ridge[smallest,"Lambda"])
+RMSE <- RMSE_ridge
+data_for_kable_ridge <- data.frame(lambda, RMSE) 
+knitr::kable(data_for_kable_ridge,
+            caption = 
+              "Figure 3.2: Lambda with lowest Test RMSE")
+
+```
+
+
+
+```{r}
+## Save Ridge Model with Lambda = 14
+ridge.final <- glmnet(XD[,-1], data$price, alpha =0 ,
+                      lambda = CVResults_ridge[smallest,"Lambda"])
+ridge.betas <- as.numeric(coefficients(ridge.final))
+Ridge_Betas <- data.frame("Coefficients" = ridge.betas)
+rownames(Ridge_Betas) <- colnames(XD)
+
+#Display Coefficients 
+knitr::kable(Ridge_Betas,
+            caption = 
+              "Figure 3.3: Coefficients for Ridge Regression with Lambda = 14")
+```
+
+```{r}
+## Run 10-Fold on Lasso
+set.seed(1)
+cv.out_lasso <- cv.glmnet(XD[,-1], data$price , alpha = 1, lambda = seq(from = 0, to = 60, by = .5), standardize = TRUE)
+```
+
+```{r}
+## Create dataframe which contains results from 10-Fold
+CVResults_lasso <- data.frame("Lambda" = cv.out_lasso$lambda, "MSE" = cv.out_lasso$cvm)
+
+
+## Save lambda value with the smallest MSE
+smallest_lasso <- which.min(CVResults_lasso$MSE)
+
+
+## Save RMSE for that parameter
+RMSE_lasso <- sqrt(CVResults_lasso[smallest_lasso,"MSE"])
+
+## Create Table 
+lambda_lasso <- c(CVResults_lasso[smallest_lasso,"Lambda"])
+```
+
+```{r}
+## Plot output of lasso. This graph shows amount of features used as well
+plot(cv.out_lasso)
+title(main = "Figure 4.1: Test MSE for Possible Parameters in Lasso Regression", cex.main = .8, line = -1, sub = "Lambda=.5 has smallest Test MSE", cex.sub = .7) 
+
+```
+
+
+
+```{r}
+## Examine how test RMSE changes with Lambda
+ridgePlot(cv.out_lasso, metric = "RMSE", title = "Figure 4.2: Test MSE for different values of lambda with Lasso Regression")
+```
+
+
+
+
+```{r}
+## Save Table which shows RMSE for best tuning parameter
+data_for_kable_lasso <- data.frame(lambda_lasso, RMSE_lasso) 
+knitr::kable(data_for_kable_lasso,
+            caption = 
+              "Figure 4.3: Lambda with lowest Test RMSE for Lasso")
+
+## Save Laso Model with Lambda = .5
+lasso.final <- glmnet(XD[,-1], data$price, alpha =1,
+              lambda = CVResults_lasso[smallest_lasso,"Lambda"])
+lasso.betas <- as.numeric(round(coefficients(lasso.final),3))
+Lasso_Betas <- data.frame("Coefficients" = lasso.betas)
+
+## Display Coefficients 
+rownames(Lasso_Betas) <- colnames(XD)
+knitr::kable(Lasso_Betas,
+            caption = 
+              "Figure 4.4: Coefficients for Lasso Regression with Lambda = .5")
+```
+
+
+```{r}
+# Choose a sequence of values for alpha 
+alphaseq <- seq(from = 0, to =1 , by =.01)
+storage <- data.frame("Alpha" = rep(NA,length(alphaseq)), "Lambda" = rep(NA,length(alphaseq)), "MSE" = rep(NA,length(alphaseq)))
+
+a = 1 
+# Run 10-fold CV
+for( i in alphaseq ){
+  ## Set randomness each time loop runs for reproducible results in CV
+  set.seed(1)
+  ## Run Cross Fold
+  cv.out_lasso <- cv.glmnet(XD[ , -1], data$price, alpha = i,lambda = seq(from = 0, to = 25, by = .5))
+  
+  ## Save the lambda with the lowest test MSE
+  storage$Lambda[a] <- cv.out_lasso$lambda.min
+  storage$MSE[a] <- (min(cv.out_lasso$cvm))
+  storage$Alpha[a] <- i
+  a = a + 1 
+}
+```
+
+
+
+```{r}
+## Graph how Test RMSE changes with Alpha
+library(ggplot2)
+ggplot(storage, aes(Alpha, sqrt(MSE))) + geom_point() +
+labs(caption = "Alpha = 0 resulted in the lowest Test RMSE") +
+geom_vline(xintercept = 0, lty = 2,
+col = "red") + labs(x = "Choices of Alpha", y = "Test RMSE", 
+                    title = "Figure 5.1:", 
+                    subtitle = "Choices of Alpha vs Test RMSE") + geom_label(
+    label=sqrt(storage[which.min(storage$MSE),]$MSE), 
+    x= 0,
+    y=min(storage$MSE),
+    label.padding = unit(0.001, "lines"), # Rectangle size around label
+    label.size = 0.01,
+    color = "black",
+    fill="#69b3a2"
+  )
+
+
+```
+
+
+
+```{r}
+## Save RMSE for elastic
+RMSE_elastic <- sqrt(min(storage$MSE))
+lambda_elastic <- storage$Lambda[which.min(storage$MSE)]
+alpha_elastic <- storage$Alpha[which.min(storage$MSE)]
+
+## Create Table 
+
+CVResults_elastic <- data.frame("Lambda" = lambda_elastic, "RMSE" = RMSE_elastic, "Alpha" = alpha_elastic)
+knitr::kable(CVResults_elastic,
+            caption = 
+              "Figure 5.2: Test RMSE for Elastic Net with  Lambda = .5, Alpha =1")
+```
+
+```{r}
+## Save final model and show table with coefficients
+elastic.final <- glmnet(XD[,-1], data$price, alpha =0 ,
+                      lambda = 14)
+elastic.final <- round(as.numeric(coefficients(elastic.final)),3)
+elastic_betas <- data.frame("Coefficients" = elastic.final)
+rownames(elastic_betas) <- colnames(XD)
+
+## Display Coefficients 
+knitr::kable(elastic_betas,
+            caption = 
+              "Figure 5.3: Coefficients for Elastic Net Regression with Lambda = .5, Alpha =1")
+```
+
+
+```{r,fig.height = 4, fig.width = 4}
+kable(data.frame("Method" = c("Ridge Regression", "Lasso Regression", "Elastic Net"),  "RMSE" = c(RMSE_ridge, RMSE_lasso, RMSE_elastic)), caption= 'Figure 6.1: Regression Models and their test RMSE')
+```
+
+
+
+```{r}
+## Save Predicted Values
+predicted_ridge <- predict(ridge.final, XD[,-1], type = 'resp') 
+
+## Graph how actual price changes wiht predicted and error
+g1 <- ggplot(data = data, aes(x= price, predicted_ridge )) + geom_point() +  labs(x = "Actual Values of Price", y = "Predicted Price from Ridge", 
+                    title = "Figure 6.2:", 
+                    subtitle = "Actual Price vs Predicted Price from Ridge")+ scale_x_continuous(breaks = c(0,100,200,300,400,500,600,700,800,900,1000))
+resid <- data$price-predicted_ridge
+g2 <- ggplot(data = data, aes(x= price, y = resid)) + geom_point() +  labs(x = "Actual Price", y = "Error", 
+                    title = "Figure 6.3:", 
+                    subtitle = "Actual Values of Price vs Error") + scale_y_continuous(breaks = c(-300,-200,-100, 0,100,200,300,400,500,600,700,800))
+gridExtra::grid.arrange(g1,g2, ncol = 1)
+```
+
+
+
+```{r}
+## Save R2 value, need RSS and SST
+RSS = sum((data$price-predicted_ridge)^2)
+SST = sum((data$price- mean(data$price))^2)
+R_2 <- round(1- ((RSS)/(SST)),2)
+```
+
+```{r}
+## Save Mean Cost and then create table with different metrics
+mean_cost <- round(mean(data$price),2)
+RMSE_ridge <- round(RMSE_ridge, 2)
+kable(data.frame("Metric" = c("Average Price", "R^2 for Ridge Regression Model", "Test RMSE"),  "Value" = c(mean_cost, R_2, RMSE_ridge)), caption= 'Figure 6.4: Ridge Regression Models with Metrics')
+```
+
+
+```{r}
+## Re take in VRBO dataset to get the amoutn of reviews
+data1 <- read.csv('VRBO.csv')
+mean_num <- round(mean(data1$reviews),0)
+kable(data.frame("Dataset" = c("VRBO Data"), "Average Number of Reviews" = c(mean_num)), caption = "Figure 6.5: Average Number of Reviews for Rentals")
+```
+
+
+
